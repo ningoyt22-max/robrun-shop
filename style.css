@@ -1,6 +1,7 @@
 /* ==========================================================================
    ROBRUN CASH - Luxury Minimalist Design System
    Aesthetic: Premium, Dark Obsidian, Champagne Gold, Refined Typography
+   Firebase Realtime Enabled
    ========================================================================== */
 
 :root {
@@ -77,7 +78,7 @@ body {
 
 /* ==========================================================================
    HEADER
-   ========================================================================== */
+   ========================================================================= */
 .header {
   position: sticky;
   top: 0;
@@ -172,11 +173,62 @@ body {
   border-radius: 50%;
 }
 
-/* Header Actions */
+/* Header Actions & Auth */
 .header-actions {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.btn-auth-google {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #131620;
+  border: 1px solid var(--border-subtle);
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 600;
+  padding: 7px 16px;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-auth-google:hover {
+  background: #1a1e2d;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.user-logged-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-avatar-menu {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #1a1e2d;
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+
+.user-avatar-menu:hover {
+  border-color: var(--gold-accent);
+}
+
+.user-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .balance-pill {
@@ -861,6 +913,7 @@ body {
   align-items: center;
   justify-content: center;
   font-size: 1.8rem;
+  overflow: hidden;
 }
 
 .profile-title {
@@ -1387,7 +1440,7 @@ body {
 
 /* ==========================================================================
    MODALS
-   ========================================================================= */
+   ========================================================================== */
 .modal-backdrop {
   position: fixed;
   inset: 0;

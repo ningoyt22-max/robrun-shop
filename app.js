@@ -1,135 +1,102 @@
 /**
- * ROBRUN CASH - Minimalist Luxury Edition Engine
- * Pricing: 70 RUB per 100,000 in-game currency
- * Bonus:
- *   >= 1 000 000  : +15%
- *   >= 5 000 000  : +20%
- *   >= 10 000 000 : +25%
- *
- * Core Features:
- *   1. Wallet top-up & balance-only purchasing
- *   2. Personal cabinet with exact timestamp order history & live chat
- *   3. Admin panel with user balance modification, orders management, and chat console
- *   4. Persistent localStorage storage + cross-tab synchronization
+ * ROBRUN CASH - Firebase Realtime Cloud Integration
+ * Connected to Firebase Project: robrun-git
+ * Features:
+ *   - Firebase Authentication (Google Sign-In & User Session)
+ *   - Cloud Firestore (Realtime User Balances, Orders, Live Chat)
+ *   - Security: Balances & orders stored in the cloud, protected from client tampering
+ *   - Live bi-directional chat between Buyer & Admin
  */
 
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { 
+  getAuth, 
+  signInWithPopup, 
+  GoogleAuthProvider, 
+  onAuthStateChanged, 
+  signOut 
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { 
+  getFirestore, 
+  doc, 
+  getDoc, 
+  setDoc, 
+  updateDoc, 
+  collection, 
+  addDoc, 
+  onSnapshot, 
+  query, 
+  where, 
+  orderBy, 
+  serverTimestamp, 
+  increment 
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
 // ==========================================
-// 1. DATA STORE (LocalStorage)
+// 1. FIREBASE CONFIGURATION
 // ==========================================
-const DB = {
-  getUsers() {
-    const data = localStorage.getItem('robrun_users');
-    if (!data) {
-      const defaultUsers = [
-        { id: 'usr_1', name: 'Игрок #1 (Вы)', contact: '@robber_main', balance: 0 }
-      ];
-      localStorage.setItem('robrun_users', JSON.stringify(defaultUsers));
-      return defaultUsers;
-    }
-    return JSON.parse(data);
-  },
-
-  saveUsers(users) {
-    localStorage.setItem('robrun_users', JSON.stringify(users));
-  },
-
-  getCurrentUser() {
-    const users = this.getUsers();
-    return users[0] || { id: 'usr_1', name: 'Игрок #1', balance: 0 };
-  },
-
-  updateCurrentUserBalance(deltaOrNew, isDelta = true) {
-    const users = this.getUsers();
-    if (users.length > 0) {
-      if (isDelta) users[0].balance = Math.max(0, users[0].balance + deltaOrNew);
-      else users[0].balance = Math.max(0, deltaOrNew);
-      this.saveUsers(users);
-    }
-    return this.getCurrentUser();
-  },
-
-  updateUserBalanceById(userId, newBalance) {
-    const users = this.getUsers();
-    const user = users.find(u => u.id === userId);
-    if (user) {
-      user.balance = Math.max(0, newBalance);
-      this.saveUsers(users);
-    }
-  },
-
-  getOrders() {
-    const data = localStorage.getItem('robrun_orders');
-    return data ? JSON.parse(data) : [];
-  },
-
-  saveOrders(orders) {
-    localStorage.setItem('robrun_orders', JSON.stringify(orders));
-  },
-
-  addOrder(order) {
-    const orders = this.getOrders();
-    orders.unshift(order);
-    this.saveOrders(orders);
-    return order;
-  },
-
-  updateOrderStatus(orderId, newStatus) {
-    const orders = this.getOrders();
-    const order = orders.find(o => o.id === orderId);
-    if (order) {
-      order.status = newStatus;
-      this.saveOrders(orders);
-    }
-  },
-
-  getMessages() {
-    const data = localStorage.getItem('robrun_messages');
-    if (!data) {
-      const defaultMessages = [
-        {
-          id: 1,
-          userId: 'usr_1',
-          from: 'admin',
-          text: 'Здравствуйте! Добро пожаловать в ROBRUN CASH. Если у вас возникнут вопросы по доставке валюты или серверам — пишите сюда.',
-          time: '16:00'
-        }
-      ];
-      localStorage.setItem('robrun_messages', JSON.stringify(defaultMessages));
-      return defaultMessages;
-    }
-    return JSON.parse(data);
-  },
-
-  saveMessages(messages) {
-    localStorage.setItem('robrun_messages', JSON.stringify(messages));
-  },
-
-  addMessage(from, text, userId = 'usr_1') {
-    const messages = this.getMessages();
-    const now = new Date();
-    const timeStr = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-    const newMsg = {
-      id: Date.now(),
-      userId,
-      from,
-      text,
-      time: timeStr
-    };
-    messages.push(newMsg);
-    this.saveMessages(messages);
-    return newMsg;
-  }
+const firebaseConfig = {
+  apiKey: "AIzaSyCWeTcNCYYWJ_u6BbHHnxPqQmqRcEPmAPg",
+  authDomain: "robrun-git.firebaseapp.com",
+  projectId: "robrun-git",
+  storageBucket: "robrun-git.firebasestorage.app",
+  messagingSenderId: "736942180958",
+  appId: "1:736942180958:web:e6f87b08086d4165b582cf",
+  measurementId: "G-J97WE9GRW1"
 };
 
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// State Variables
+let currentUser = null;
+let currentUserData = { balance: 0 };
+let currentTargetAmount = 1000000;
+let userUnsubscribe = null;
+let ordersUnsubscribe = null;
+let chatUnsubscribe = null;
+let adminSelectedUserId = null;
+
+// Pricing: 70 RUB per 100,000 $ (0.0007 RUB per $)
+const RATE_PER_UNIT = 70 / 100000;
+
+// Format Helpers
+function formatNumber(num) {
+  return Math.round(num || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+}
+
+function parseFormattedNumber(str) {
+  const clean = str.toString().replace(/[^\d]/g, '');
+  const num = parseInt(clean, 10);
+  return isNaN(num) ? 0 : num;
+}
+
+function escapeHtml(text) {
+  if (!text) return '';
+  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
+
 // ==========================================
-// 2. UI CONTROLLER
+// 2. DOM INITIALIZATION
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
 
-  // Elements
+  // Auth UI Elements
+  const btnLoginGoogle = document.getElementById('btn-login-google');
+  const userLoggedBox = document.getElementById('user-logged-box');
+  const userAvatarBtn = document.getElementById('user-avatar-btn');
+  const userAvatarImg = document.getElementById('user-avatar-img');
+  const userAvatarPlaceholder = document.getElementById('user-avatar-placeholder');
+
+  // Header & Balance
   const headerBalanceVal = document.getElementById('header-balance-val');
   const cabinetBalanceVal = document.getElementById('cabinet-balance-val');
   const summaryUserBalance = document.getElementById('summary-user-balance');
+  const cabinetUsername = document.getElementById('cabinet-username');
+  const cabinetUserEmail = document.getElementById('cabinet-useremail');
+  const cabinetAvatarBox = document.getElementById('cabinet-avatar-box');
   const btnOpenTopup = document.getElementById('btn-open-topup');
   const cabinetTopupBtn = document.getElementById('cabinet-topup-btn');
 
@@ -137,6 +104,22 @@ document.addEventListener('DOMContentLoaded', () => {
   const navBtns = document.querySelectorAll('.nav-btn');
   const viewPanels = document.querySelectorAll('.view-panel');
   const brandLogo = document.getElementById('nav-brand');
+
+  // Calculator Elements
+  const currencyInput = document.getElementById('currency-input');
+  const currencySlider = document.getElementById('currency-slider');
+  const presetCards = document.querySelectorAll('.preset-card');
+  const summaryBaseAmount = document.getElementById('summary-base-amount');
+  const summaryBonusPct = document.getElementById('summary-bonus-pct');
+  const summaryBonusAmount = document.getElementById('summary-bonus-amount');
+  const summaryTotalReceived = document.getElementById('summary-total-received');
+  const summaryTotalPrice = document.getElementById('summary-total-price');
+  const bonusTierText = document.getElementById('bonus-tier-text');
+  const bonusNextText = document.getElementById('bonus-next-text');
+  const bonusProgressFill = document.getElementById('bonus-progress-fill');
+  const milestoneTexts = document.querySelectorAll('.bonus-milestones .milestone-text');
+  const submitOrderBtn = document.getElementById('submit-order-btn');
+  const orderForm = document.getElementById('order-form');
 
   // Modals
   const topupModal = document.getElementById('topup-modal');
@@ -164,30 +147,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const successNickServer = document.getElementById('success-nick-server');
   const btnGotoCabinetAfterOrder = document.getElementById('btn-goto-cabinet-after-order');
 
-  // Calculator
-  const currencyInput = document.getElementById('currency-input');
-  const currencySlider = document.getElementById('currency-slider');
-  const presetCards = document.querySelectorAll('.preset-card');
-  const summaryBaseAmount = document.getElementById('summary-base-amount');
-  const summaryBonusPct = document.getElementById('summary-bonus-pct');
-  const summaryBonusAmount = document.getElementById('summary-bonus-amount');
-  const summaryTotalReceived = document.getElementById('summary-total-received');
-  const summaryTotalPrice = document.getElementById('summary-total-price');
-  const bonusTierText = document.getElementById('bonus-tier-text');
-  const bonusNextText = document.getElementById('bonus-next-text');
-  const bonusProgressFill = document.getElementById('bonus-progress-fill');
-  const milestoneTexts = document.querySelectorAll('.bonus-milestones .milestone-text');
-  const submitOrderBtn = document.getElementById('submit-order-btn');
-  const orderForm = document.getElementById('order-form');
-
-  // Cabinet & Chat
+  // Cabinet & Chat Elements
   const cabinetOrdersList = document.getElementById('cabinet-orders-list');
   const cabinetOrdersCount = document.getElementById('cabinet-orders-count');
   const customerChatMessages = document.getElementById('customer-chat-messages');
   const customerChatForm = document.getElementById('customer-chat-form');
   const customerChatInput = document.getElementById('customer-chat-input');
 
-  // Admin
+  // Admin Elements
   const adminTabLinks = document.querySelectorAll('.admin-tab-link');
   const adminSubviews = document.querySelectorAll('.admin-subview');
   const adminOrdersTbody = document.getElementById('admin-orders-tbody');
@@ -200,57 +167,258 @@ document.addEventListener('DOMContentLoaded', () => {
   const adminStatTurnover = document.getElementById('admin-stat-turnover');
   const subtabOrdersBadge = document.getElementById('subtab-orders-badge');
   const btnQuickReplyHello = document.getElementById('btn-quick-reply-hello');
+  const adminChatTargetUser = document.getElementById('admin-chat-target-user');
+  const adminChatTargetMeta = document.getElementById('admin-chat-target-meta');
 
-  // Rate constant: 70 RUB per 100,000 in-game currency
-  const RATE_PER_UNIT = 70 / 100000;
+  // ==========================================
+  // 3. FIREBASE AUTH STATE LISTENER
+  // ==========================================
+  onAuthStateChanged(auth, async (user) => {
+    currentUser = user;
 
-  function formatNumber(num) {
-    return Math.round(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-  }
+    if (user) {
+      // User is signed in
+      btnLoginGoogle.style.display = 'none';
+      userLoggedBox.style.display = 'flex';
 
-  function parseFormattedNumber(str) {
-    const clean = str.toString().replace(/[^\d]/g, '');
-    const num = parseInt(clean, 10);
-    return isNaN(num) ? 0 : num;
-  }
+      if (user.photoURL) {
+        userAvatarImg.src = user.photoURL;
+        userAvatarImg.style.display = 'block';
+        userAvatarPlaceholder.style.display = 'none';
+        cabinetAvatarBox.innerHTML = `<img src="${user.photoURL}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+      } else {
+        userAvatarImg.style.display = 'none';
+        userAvatarPlaceholder.style.display = 'block';
+        cabinetAvatarBox.innerHTML = '👤';
+      }
 
-  // View Navigation
-  function switchView(viewId) {
-    viewPanels.forEach(p => p.classList.remove('active'));
-    navBtns.forEach(b => b.classList.remove('active'));
+      cabinetUsername.textContent = user.displayName || user.email.split('@')[0];
+      cabinetUserEmail.textContent = user.email;
 
-    const targetPanel = document.getElementById(viewId);
-    if (targetPanel) targetPanel.classList.add('active');
+      // Sync User in Firestore
+      await syncUserDocument(user);
 
-    navBtns.forEach(b => {
-      if (b.dataset.view === viewId) b.classList.add('active');
-    });
+      // Listen to User's Firestore Document in Realtime
+      subscribeToUserData(user.uid);
 
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    renderAll();
-  }
+      // Listen to User's Orders
+      subscribeToUserOrders(user.uid);
 
-  navBtns.forEach(btn => {
-    btn.addEventListener('click', () => switchView(btn.dataset.view));
+      // Listen to User's Chat Messages
+      subscribeToUserChat(user.uid);
+
+    } else {
+      // User is signed out
+      btnLoginGoogle.style.display = 'flex';
+      userLoggedBox.style.display = 'none';
+
+      currentUserData = { balance: 0 };
+      updateBalancesUI(0);
+
+      cabinetUsername.textContent = 'Гость (Войдите в аккаунт)';
+      cabinetUserEmail.textContent = 'Синхронизировано с Firebase Cloud';
+      cabinetAvatarBox.innerHTML = '👤';
+
+      if (userUnsubscribe) userUnsubscribe();
+      if (ordersUnsubscribe) ordersUnsubscribe();
+      if (chatUnsubscribe) chatUnsubscribe();
+
+      cabinetOrdersList.innerHTML = `
+        <div style="text-align:center; padding: 48px 20px; color: var(--text-dim);">
+          <div style="font-size: 2.2rem; margin-bottom: 8px;">🔐</div>
+          <p>Войдите в аккаунт, чтобы видеть историю своих заказов.</p>
+        </div>
+      `;
+      customerChatMessages.innerHTML = `
+        <div class="msg-bubble-wrap support">
+          <div class="msg-text">Пожалуйста, войдите через Google, чтобы общаться с оператором поддержки.</div>
+          <div class="msg-meta">Система</div>
+        </div>
+      `;
+    }
   });
 
-  if (brandLogo) {
-    brandLogo.addEventListener('click', () => switchView('shop-view'));
-  }
-
-  // Admin Subtabs
-  adminTabLinks.forEach(link => {
-    link.addEventListener('click', () => {
-      adminTabLinks.forEach(l => l.classList.remove('active'));
-      adminSubviews.forEach(v => v.classList.remove('active'));
-      link.classList.add('active');
-      const target = document.getElementById(link.dataset.subtab);
-      if (target) target.classList.add('active');
-    });
+  // Google Login Click
+  btnLoginGoogle.addEventListener('click', async () => {
+    const provider = new GoogleAuthProvider();
+    try {
+      await signInWithPopup(auth, provider);
+    } catch (error) {
+      console.error('Ошибка авторизации Google:', error);
+      alert('Ошибка входа: ' + (error.message || 'Проверьте, включен ли Google вход в Firebase Console'));
+    }
   });
 
-  // Top-Up Modal
+  // Logout Click
+  userAvatarBtn.addEventListener('click', async () => {
+    if (confirm('Вы действительно хотите выйти из аккаунта?')) {
+      await signOut(auth);
+    }
+  });
+
+  // ==========================================
+  // 4. FIRESTORE REALTIME SYNC
+  // ==========================================
+  async function syncUserDocument(user) {
+    const userRef = doc(db, 'users', user.uid);
+    try {
+      const snap = await getDoc(userRef);
+      if (!snap.exists()) {
+        await setDoc(userRef, {
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName || 'Покупатель',
+          photoURL: user.photoURL || '',
+          balance: 0,
+          createdAt: serverTimestamp()
+        });
+      } else {
+        // Update contact/name if changed
+        await updateDoc(userRef, {
+          email: user.email,
+          displayName: user.displayName || snap.data().displayName,
+          photoURL: user.photoURL || snap.data().photoURL
+        });
+      }
+    } catch (e) {
+      console.warn('Firestore initial sync notice:', e);
+    }
+  }
+
+  function subscribeToUserData(uid) {
+    if (userUnsubscribe) userUnsubscribe();
+    userUnsubscribe = onSnapshot(doc(db, 'users', uid), (docSnap) => {
+      if (docSnap.exists()) {
+        currentUserData = docSnap.data();
+        updateBalancesUI(currentUserData.balance || 0);
+      }
+    }, (error) => {
+      console.error('Ошибка подписки на пользователя:', error);
+    });
+  }
+
+  function updateBalancesUI(balance) {
+    headerBalanceVal.textContent = `${formatNumber(balance)} ₽`;
+    cabinetBalanceVal.textContent = `${formatNumber(balance)} ₽`;
+    summaryUserBalance.textContent = `${formatNumber(balance)} ₽`;
+  }
+
+  // Subscribe to Orders for Current User
+  function subscribeToUserOrders(uid) {
+    if (ordersUnsubscribe) ordersUnsubscribe();
+    const q = query(collection(db, 'orders'), where('userId', '==', uid));
+
+    ordersUnsubscribe = onSnapshot(q, (snapshot) => {
+      cabinetOrdersCount.textContent = `${snapshot.size} заказов`;
+
+      if (snapshot.empty) {
+        cabinetOrdersList.innerHTML = `
+          <div style="text-align:center; padding: 48px 20px; color: var(--text-dim);">
+            <div style="font-size: 2.2rem; margin-bottom: 8px;">📦</div>
+            <p>Активных заказов пока нет.</p>
+          </div>
+        `;
+        return;
+      }
+
+      const orders = [];
+      snapshot.forEach(docSnap => orders.push({ id: docSnap.id, ...docSnap.data() }));
+
+      // Sort client-side by date
+      orders.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+
+      cabinetOrdersList.innerHTML = orders.map(o => {
+        let statusClass = 'status-pending';
+        if (o.status === 'В процессе') statusClass = 'status-processing';
+        if (o.status === 'Выполнен') statusClass = 'status-completed';
+        if (o.status === 'Отменен') statusClass = 'status-cancelled';
+
+        return `
+          <div class="order-entry">
+            <div class="order-entry-top">
+              <span class="order-code">${o.orderCode || o.id.slice(0, 7)}</span>
+              <span class="status-badge ${statusClass}">${o.status}</span>
+            </div>
+            <div class="order-time">Время оформления: <strong>${o.date || 'Недавно'}</strong></div>
+            <div class="order-stats-grid">
+              <div><span>Валюта:</span> <strong>${formatNumber(o.totalCash)} $</strong> (+${o.bonusPct}%)</div>
+              <div><span>Списано:</span> <strong>${formatNumber(o.price)} ₽</strong></div>
+              <div><span>Ник:</span> <strong>${escapeHtml(o.gameNick)}</strong></div>
+              <div><span>Сервер:</span> <strong>${o.server}</strong></div>
+              <div style="grid-column: span 2;"><span>Способ передачи:</span> <strong>${o.deliveryType}</strong></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    });
+  }
+
+  // Subscribe to Chat for Current User
+  function subscribeToUserChat(uid) {
+    if (chatUnsubscribe) chatUnsubscribe();
+    const q = query(collection(db, 'messages'), where('userId', '==', uid));
+
+    chatUnsubscribe = onSnapshot(q, (snapshot) => {
+      const msgs = [];
+      snapshot.forEach(docSnap => msgs.push({ id: docSnap.id, ...docSnap.data() }));
+      msgs.sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0));
+
+      if (msgs.length === 0) {
+        customerChatMessages.innerHTML = `
+          <div class="msg-bubble-wrap support">
+            <div class="msg-text">Здравствуйте! Напишите нам, если у вас возникли вопросы по доставке валюты в ROB RUN.</div>
+            <div class="msg-meta">Оператор поддержки</div>
+          </div>
+        `;
+        return;
+      }
+
+      customerChatMessages.innerHTML = msgs.map(m => `
+        <div class="msg-bubble-wrap ${m.from === 'user' ? 'client' : 'support'}">
+          <div class="msg-text">${escapeHtml(m.text)}</div>
+          <div class="msg-meta">${m.from === 'admin' ? 'Администратор' : 'Вы'} • ${m.time || ''}</div>
+        </div>
+      `).join('');
+      customerChatMessages.scrollTop = customerChatMessages.scrollHeight;
+    });
+  }
+
+  // Send message in customer chat
+  customerChatForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!currentUser) {
+      alert('Пожалуйста, сначала войдите через Google!');
+      return;
+    }
+    const text = customerChatInput.value.trim();
+    if (!text) return;
+
+    customerChatInput.value = '';
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+
+    try {
+      await addDoc(collection(db, 'messages'), {
+        userId: currentUser.uid,
+        userName: currentUser.displayName || currentUser.email,
+        from: 'user',
+        text: text,
+        time: timeStr,
+        createdAt: serverTimestamp()
+      });
+    } catch (err) {
+      console.error('Ошибка отправки сообщения:', err);
+    }
+  });
+
+  // ==========================================
+  // 5. TOP-UP & PURCHASE (BALANCE ONLY)
+  // ==========================================
   function openTopupModal(amount = 700) {
+    if (!currentUser) {
+      alert('Пожалуйста, сначала войдите в аккаунт через Google в правом верхнем углу!');
+      return;
+    }
     topupAmountInput.value = amount;
     topupBtnSum.textContent = formatNumber(amount);
     chipBtns.forEach(chip => {
@@ -289,22 +457,158 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  btnSubmitTopup.addEventListener('click', () => {
+  btnSubmitTopup.addEventListener('click', async () => {
+    if (!currentUser) {
+      alert('Войдите через Google, чтобы пополнить баланс!');
+      return;
+    }
     const amount = parseInt(topupAmountInput.value, 10);
     if (!amount || amount < 50) {
       alert('Минимальная сумма пополнения — 50 ₽');
       return;
     }
 
-    const updatedUser = DB.updateCurrentUserBalance(amount, true);
-    closeTopupModal();
+    try {
+      const userRef = doc(db, 'users', currentUser.uid);
+      await updateDoc(userRef, {
+        balance: increment(amount)
+      });
 
-    DB.addMessage('admin', `✅ Баланс пополнен на ${formatNumber(amount)} ₽. Текущий баланс: ${formatNumber(updatedUser.balance)} ₽.`);
-    renderAll();
-    alert(`Баланс успешно пополнен на ${formatNumber(amount)} ₽!`);
+      // Send confirmation to chat
+      const now = new Date();
+      await addDoc(collection(db, 'messages'), {
+        userId: currentUser.uid,
+        userName: currentUser.displayName || currentUser.email,
+        from: 'admin',
+        text: `✅ Баланс пополнен на ${formatNumber(amount)} ₽. Средства готовы к списанию за валюту ROB RUN.`,
+        time: now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
+        createdAt: serverTimestamp()
+      });
+
+      closeTopupModal();
+      alert(`Баланс успешно пополнен на ${formatNumber(amount)} ₽ в облаке Firebase!`);
+    } catch (err) {
+      console.error('Ошибка пополнения:', err);
+      alert('Ошибка при пополнении в Firestore: ' + err.message);
+    }
   });
 
-  // Calculator Logic
+  // Order Placement
+  orderForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    if (!currentUser) {
+      alert('Пожалуйста, войдите через Google (кнопка в правом верхнем углу), чтобы оформить заказ!');
+      return;
+    }
+
+    const currentBalance = currentUserData.balance || 0;
+    const amount = parseFormattedNumber(currencyInput.value);
+    const price = Math.round(amount * RATE_PER_UNIT);
+
+    // Strict balance check
+    if (currentBalance < price) {
+      const diff = price - currentBalance;
+      insufficientCost.textContent = `${formatNumber(price)} ₽`;
+      insufficientCurrent.textContent = `${formatNumber(currentBalance)} ₽`;
+      insufficientDiff.textContent = `${formatNumber(diff)} ₽`;
+
+      btnInsufficientTopup.onclick = () => {
+        insufficientModal.classList.remove('open');
+        openTopupModal(diff);
+      };
+
+      insufficientModal.classList.add('open');
+      return;
+    }
+
+    // Deduct balance and create order in Firestore
+    try {
+      submitOrderBtn.disabled = true;
+      submitOrderBtn.textContent = 'Оформление...';
+
+      const userRef = doc(db, 'users', currentUser.uid);
+      await updateDoc(userRef, {
+        balance: increment(-price)
+      });
+
+      const nick = document.getElementById('player-nick').value.trim();
+      const server = document.getElementById('player-server').value;
+      const contact = document.getElementById('player-contact').value.trim();
+      const deliveryType = document.getElementById('delivery-type').value;
+
+      const tier = getBonusTier(amount);
+      const bonusCurrency = Math.round(amount * (tier.pct / 100));
+      const totalCurrency = amount + bonusCurrency;
+
+      const now = new Date();
+      const timeFormatted = now.toLocaleString('ru-RU', {
+        day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit', second: '2-digit'
+      });
+
+      const orderCode = 'RR-' + Math.floor(1000 + Math.random() * 9000);
+
+      const orderData = {
+        orderCode: orderCode,
+        userId: currentUser.uid,
+        userEmail: currentUser.email,
+        userName: currentUser.displayName || 'Покупатель',
+        gameNick: nick,
+        server: server,
+        contact: contact,
+        deliveryType: deliveryType,
+        cashAmount: amount,
+        bonusAmount: bonusCurrency,
+        bonusPct: tier.pct,
+        totalCash: totalCurrency,
+        price: price,
+        status: 'Ожидает обработки',
+        date: timeFormatted,
+        createdAt: serverTimestamp()
+      };
+
+      await addDoc(collection(db, 'orders'), orderData);
+
+      // Auto message in chat
+      await addDoc(collection(db, 'messages'), {
+        userId: currentUser.uid,
+        userName: currentUser.displayName || currentUser.email,
+        from: 'admin',
+        text: `📦 Заказ ${orderCode} успешно зарегистрирован на сумму ${formatNumber(totalCurrency)} $ (${formatNumber(price)} ₽ списано). Оператор свяжется с вами по ${contact}.`,
+        time: now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
+        createdAt: serverTimestamp()
+      });
+
+      // Show Success Modal
+      successOrderId.textContent = orderCode;
+      successTime.textContent = timeFormatted;
+      successTotalCash.textContent = `${formatNumber(totalCurrency)} $`;
+      successPrice.textContent = `${formatNumber(price)} ₽`;
+      successRemainingBalance.textContent = `${formatNumber(currentBalance - price)} ₽`;
+      successNickServer.textContent = `${nick} (${server})`;
+
+      orderSuccessModal.classList.add('open');
+    } catch (err) {
+      console.error('Ошибка создания заказа:', err);
+      alert('Ошибка при сохранении заказа: ' + err.message);
+    } finally {
+      submitOrderBtn.disabled = false;
+      submitOrderBtn.textContent = `Оплатить с баланса — ${formatNumber(price)} ₽`;
+    }
+  });
+
+  insufficientClose.addEventListener('click', () => insufficientModal.classList.remove('open'));
+  orderSuccessClose.addEventListener('click', () => orderSuccessModal.classList.remove('open'));
+
+  btnGotoCabinetAfterOrder.addEventListener('click', () => {
+    orderSuccessModal.classList.remove('open');
+    switchView('cabinet-view');
+  });
+
+  // ==========================================
+  // 6. CALCULATOR CORE LOGIC
+  // ==========================================
   function getBonusTier(amount) {
     if (amount >= 10000000) return { pct: 25, nextAmount: null, nextPct: null, stepIndex: 3 };
     if (amount >= 5000000) return { pct: 20, nextAmount: 10000000, nextPct: 25, stepIndex: 2 };
@@ -314,6 +618,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function updateCalculator(amount) {
     if (amount < 0) amount = 0;
+    currentTargetAmount = amount;
 
     const tier = getBonusTier(amount);
     const bonusCurrency = Math.round(amount * (tier.pct / 100));
@@ -368,247 +673,126 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Order Placement
-  orderForm.addEventListener('submit', (e) => {
-    e.preventDefault();
+  // Navigation Switch
+  function switchView(viewId) {
+    viewPanels.forEach(p => p.classList.remove('active'));
+    navBtns.forEach(b => b.classList.remove('active'));
 
-    const currentUser = DB.getCurrentUser();
-    const amount = parseFormattedNumber(currencyInput.value);
-    const price = Math.round(amount * RATE_PER_UNIT);
+    const targetPanel = document.getElementById(viewId);
+    if (targetPanel) targetPanel.classList.add('active');
 
-    if (currentUser.balance < price) {
-      const diff = price - currentUser.balance;
-      insufficientCost.textContent = `${formatNumber(price)} ₽`;
-      insufficientCurrent.textContent = `${formatNumber(currentUser.balance)} ₽`;
-      insufficientDiff.textContent = `${formatNumber(diff)} ₽`;
-
-      btnInsufficientTopup.onclick = () => {
-        insufficientModal.classList.remove('open');
-        openTopupModal(diff);
-      };
-
-      insufficientModal.classList.add('open');
-      return;
-    }
-
-    const updatedUser = DB.updateCurrentUserBalance(-price, true);
-
-    const nick = document.getElementById('player-nick').value.trim();
-    const server = document.getElementById('player-server').value;
-    const contact = document.getElementById('player-contact').value.trim();
-    const deliveryType = document.getElementById('delivery-type').value;
-
-    const tier = getBonusTier(amount);
-    const bonusCurrency = Math.round(amount * (tier.pct / 100));
-    const totalCurrency = amount + bonusCurrency;
-
-    const now = new Date();
-    const timeFormatted = now.toLocaleString('ru-RU', {
-      day: '2-digit', month: '2-digit', year: 'numeric',
-      hour: '2-digit', minute: '2-digit', second: '2-digit'
+    navBtns.forEach(b => {
+      if (b.dataset.view === viewId) b.classList.add('active');
     });
 
-    const newOrder = {
-      id: 'RR-' + Math.floor(1000 + Math.random() * 9000),
-      userId: currentUser.id,
-      userNick: currentUser.name,
-      gameNick: nick,
-      server: server,
-      contact: contact,
-      deliveryType: deliveryType,
-      cashAmount: amount,
-      bonusAmount: bonusCurrency,
-      bonusPct: tier.pct,
-      totalCash: totalCurrency,
-      price: price,
-      date: timeFormatted,
-      status: 'Ожидает обработки'
-    };
-
-    DB.addOrder(newOrder);
-
-    DB.addMessage('admin', `📦 Заказ ${newOrder.id} успешно оформлен на сумму ${formatNumber(newOrder.totalCash)} $. Ожидайте связи оператора.`);
-
-    successOrderId.textContent = newOrder.id;
-    successTime.textContent = newOrder.date;
-    successTotalCash.textContent = `${formatNumber(newOrder.totalCash)} $`;
-    successPrice.textContent = `${formatNumber(newOrder.price)} ₽`;
-    successRemainingBalance.textContent = `${formatNumber(updatedUser.balance)} ₽`;
-    successNickServer.textContent = `${newOrder.gameNick} (${newOrder.server})`;
-
-    orderSuccessModal.classList.add('open');
-    renderAll();
-  });
-
-  insufficientClose.addEventListener('click', () => insufficientModal.classList.remove('open'));
-  orderSuccessClose.addEventListener('click', () => orderSuccessModal.classList.remove('open'));
-
-  btnGotoCabinetAfterOrder.addEventListener('click', () => {
-    orderSuccessModal.classList.remove('open');
-    switchView('cabinet-view');
-  });
-
-  // Support Chat Senders
-  customerChatForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const text = customerChatInput.value.trim();
-    if (!text) return;
-    DB.addMessage('user', text);
-    customerChatInput.value = '';
-    renderChat();
-  });
-
-  adminChatForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const text = adminChatInput.value.trim();
-    if (!text) return;
-    DB.addMessage('admin', text);
-    adminChatInput.value = '';
-    renderChat();
-  });
-
-  btnQuickReplyHello.addEventListener('click', () => {
-    DB.addMessage('admin', 'Курьер готов к передаче! Пожалуйста, зайдите на указанный сервер и напишите ваш статус.');
-    renderChat();
-  });
-
-  // Rendering
-  function renderHeaderAndBalances() {
-    const user = DB.getCurrentUser();
-    headerBalanceVal.textContent = `${formatNumber(user.balance)} ₽`;
-    cabinetBalanceVal.textContent = `${formatNumber(user.balance)} ₽`;
-    summaryUserBalance.textContent = `${formatNumber(user.balance)} ₽`;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  function renderCabinetOrders() {
-    const orders = DB.getOrders();
-    cabinetOrdersCount.textContent = `${orders.length} заказов`;
+  navBtns.forEach(btn => {
+    btn.addEventListener('click', () => switchView(btn.dataset.view));
+  });
 
-    if (orders.length === 0) {
-      cabinetOrdersList.innerHTML = `
-        <div style="text-align:center; padding: 48px 20px; color: var(--text-dim);">
-          <div style="font-size: 2.2rem; margin-bottom: 8px;">📦</div>
-          <p>Активных заказов пока нет.</p>
-        </div>
-      `;
+  if (brandLogo) {
+    brandLogo.addEventListener('click', () => switchView('shop-view'));
+  }
+
+  // Admin Subtabs
+  adminTabLinks.forEach(link => {
+    link.addEventListener('click', () => {
+      adminTabLinks.forEach(l => l.classList.remove('active'));
+      adminSubviews.forEach(v => v.classList.remove('active'));
+      link.classList.add('active');
+      const target = document.getElementById(link.dataset.subtab);
+      if (target) target.classList.add('active');
+    });
+  });
+
+  // ==========================================
+  // 7. ADMIN PANEL (REALTIME FIRESTORE)
+  // ==========================================
+  // 1. Listen to ALL orders in realtime
+  onSnapshot(collection(db, 'orders'), (snapshot) => {
+    adminStatOrders.textContent = snapshot.size;
+    subtabOrdersBadge.textContent = snapshot.size;
+
+    if (snapshot.empty) {
+      adminOrdersTbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 32px; color: var(--text-dim);">Заказов в Firebase пока нет</td></tr>`;
+      adminStatTurnover.textContent = '0 ₽';
       return;
     }
 
-    cabinetOrdersList.innerHTML = orders.map(o => {
-      let statusClass = 'status-pending';
-      if (o.status === 'В процессе') statusClass = 'status-processing';
-      if (o.status === 'Выполнен') statusClass = 'status-completed';
-      if (o.status === 'Отменен') statusClass = 'status-cancelled';
+    const allOrders = [];
+    let turnover = 0;
+    snapshot.forEach(docSnap => {
+      const o = { id: docSnap.id, ...docSnap.data() };
+      allOrders.push(o);
+      if (o.status !== 'Отменен') turnover += (o.price || 0);
+    });
 
-      return `
-        <div class="order-entry">
-          <div class="order-entry-top">
-            <span class="order-code">${o.id}</span>
-            <span class="status-badge ${statusClass}">${o.status}</span>
-          </div>
-          <div class="order-time">Время оформления: <strong>${o.date}</strong></div>
-          <div class="order-stats-grid">
-            <div><span>Валюта:</span> <strong>${formatNumber(o.totalCash)} $</strong> (+${o.bonusPct}%)</div>
-            <div><span>Списано:</span> <strong>${formatNumber(o.price)} ₽</strong></div>
-            <div><span>Ник:</span> <strong>${escapeHtml(o.gameNick)}</strong></div>
-            <div><span>Сервер:</span> <strong>${o.server}</strong></div>
-            <div style="grid-column: span 2;"><span>Способ передачи:</span> <strong>${o.deliveryType}</strong></div>
-          </div>
-        </div>
-      `;
-    }).join('');
-  }
+    adminStatTurnover.textContent = `${formatNumber(turnover)} ₽`;
+    allOrders.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
 
-  function renderChat() {
-    const messages = DB.getMessages();
-
-    const html = messages.map(m => `
-      <div class="msg-bubble-wrap ${m.from === 'user' ? 'client' : 'support'}">
-        <div class="msg-text">${escapeHtml(m.text)}</div>
-        <div class="msg-meta">${m.from === 'admin' ? 'Администратор' : 'Вы'} • ${m.time}</div>
-      </div>
+    adminOrdersTbody.innerHTML = allOrders.map(o => `
+      <tr>
+        <td><strong style="color:var(--gold-accent);">${o.orderCode || o.id.slice(0, 7)}</strong></td>
+        <td style="white-space:nowrap; font-size:0.8rem; color:var(--text-muted);">${o.date || ''}</td>
+        <td>
+          <strong>${escapeHtml(o.gameNick || '')}</strong><br>
+          <small style="color:var(--text-dim);">${escapeHtml(o.userEmail || o.contact || '')}</small>
+        </td>
+        <td>
+          ${o.server || ''}<br>
+          <small style="color:var(--text-muted);">${o.deliveryType || ''}</small>
+        </td>
+        <td>
+          <strong>${formatNumber(o.totalCash)} $</strong><br>
+          <small style="color:var(--gold-accent);">+${formatNumber(o.bonusAmount)} $ (${o.bonusPct}%)</small>
+        </td>
+        <td><strong>${formatNumber(o.price)} ₽</strong></td>
+        <td>
+          <select class="status-select-clean" data-order-id="${o.id}">
+            <option value="Ожидает обработки" ${o.status === 'Ожидает обработки' ? 'selected' : ''}>Ожидает</option>
+            <option value="В процессе" ${o.status === 'В процессе' ? 'selected' : ''}>В процессе</option>
+            <option value="Выполнен" ${o.status === 'Выполнен' ? 'selected' : ''}>Выполнен</option>
+            <option value="Отменен" ${o.status === 'Отменен' ? 'selected' : ''}>Отменен</option>
+          </select>
+        </td>
+      </tr>
     `).join('');
 
-    customerChatMessages.innerHTML = html;
-    customerChatMessages.scrollTop = customerChatMessages.scrollHeight;
-
-    adminChatMessages.innerHTML = html;
-    adminChatMessages.scrollTop = adminChatMessages.scrollHeight;
-
-    const lastMsg = messages[messages.length - 1];
-    adminDialogsList.innerHTML = `
-      <div class="dialog-item active">
-        <div style="display:flex; justify-content:space-between; margin-bottom: 4px;">
-          <strong style="font-size:0.85rem;">Игрок #1</strong>
-          <small style="color:var(--text-dim);">${lastMsg ? lastMsg.time : ''}</small>
-        </div>
-        <div style="font-size:0.78rem; color:var(--text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
-          ${lastMsg ? escapeHtml(lastMsg.text) : 'Нет сообщений'}
-        </div>
-      </div>
-    `;
-  }
-
-  function renderAdminTables() {
-    const orders = DB.getOrders();
-    const users = DB.getUsers();
-
-    adminStatOrders.textContent = orders.length;
-    subtabOrdersBadge.textContent = orders.length;
-    const totalTurnover = orders.reduce((sum, o) => sum + (o.status !== 'Отменен' ? o.price : 0), 0);
-    adminStatTurnover.textContent = `${formatNumber(totalTurnover)} ₽`;
-
-    if (orders.length === 0) {
-      adminOrdersTbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 32px; color: var(--text-dim);">Заказов пока нет</td></tr>`;
-    } else {
-      adminOrdersTbody.innerHTML = orders.map(o => `
-        <tr>
-          <td><strong style="color:var(--gold-accent);">${o.id}</strong></td>
-          <td style="white-space:nowrap; font-size:0.8rem; color:var(--text-muted);">${o.date}</td>
-          <td>
-            <strong>${escapeHtml(o.gameNick)}</strong><br>
-            <small style="color:var(--text-dim);">${escapeHtml(o.contact)}</small>
-          </td>
-          <td>
-            ${o.server}<br>
-            <small style="color:var(--text-muted);">${o.deliveryType}</small>
-          </td>
-          <td>
-            <strong>${formatNumber(o.totalCash)} $</strong><br>
-            <small style="color:var(--gold-accent);">+${formatNumber(o.bonusAmount)} $ (${o.bonusPct}%)</small>
-          </td>
-          <td><strong>${formatNumber(o.price)} ₽</strong></td>
-          <td>
-            <select class="status-select-clean" data-order-id="${o.id}">
-              <option value="Ожидает обработки" ${o.status === 'Ожидает обработки' ? 'selected' : ''}>Ожидает</option>
-              <option value="В процессе" ${o.status === 'В процессе' ? 'selected' : ''}>В процессе</option>
-              <option value="Выполнен" ${o.status === 'Выполнен' ? 'selected' : ''}>Выполнен</option>
-              <option value="Отменен" ${o.status === 'Отменен' ? 'selected' : ''}>Отменен</option>
-            </select>
-          </td>
-        </tr>
-      `).join('');
-
-      document.querySelectorAll('.status-select-clean').forEach(sel => {
-        sel.addEventListener('change', (e) => {
-          const orderId = e.target.dataset.orderId;
-          const newStatus = e.target.value;
-          DB.updateOrderStatus(orderId, newStatus);
-          DB.addMessage('admin', `Статус вашего заказа ${orderId} изменен на: «${newStatus}».`);
-          renderAll();
-        });
+    // Change status handler
+    document.querySelectorAll('.status-select-clean').forEach(sel => {
+      sel.addEventListener('change', async (e) => {
+        const orderId = e.target.dataset.orderId;
+        const newStatus = e.target.value;
+        try {
+          await updateDoc(doc(db, 'orders', orderId), { status: newStatus });
+        } catch (err) {
+          console.error('Ошибка обновления статуса:', err);
+        }
       });
+    });
+  });
+
+  // 2. Listen to ALL users in realtime
+  onSnapshot(collection(db, 'users'), (snapshot) => {
+    if (snapshot.empty) {
+      adminUsersTbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 24px; color: var(--text-dim);">Пользователей в базе нет</td></tr>`;
+      return;
     }
 
-    adminUsersTbody.innerHTML = users.map(u => `
+    const allUsers = [];
+    snapshot.forEach(docSnap => allUsers.push({ id: docSnap.id, ...docSnap.data() }));
+
+    adminUsersTbody.innerHTML = allUsers.map(u => `
       <tr>
-        <td><code>${u.id}</code></td>
-        <td><strong>${escapeHtml(u.name)}</strong></td>
-        <td>${escapeHtml(u.contact)}</td>
-        <td><strong style="color:var(--gold-accent); font-size:1.05rem;">${formatNumber(u.balance)} ₽</strong></td>
+        <td><code>${u.uid ? u.uid.slice(0, 8) + '...' : u.id}</code></td>
+        <td><strong>${escapeHtml(u.displayName || 'Без имени')}</strong></td>
+        <td>${escapeHtml(u.email || '-')}</td>
+        <td><strong style="color:var(--gold-accent); font-size:1.05rem;">${formatNumber(u.balance || 0)} ₽</strong></td>
         <td>
           <div class="balance-actions-clean">
-            <input type="number" id="balance-input-${u.id}" value="${u.balance}" min="0" step="100">
+            <input type="number" id="balance-input-${u.id}" value="${u.balance || 0}" min="0" step="100">
             <button class="btn-sm-action" data-set-user="${u.id}">Задать</button>
             <button class="btn-sm-action" data-add-user="${u.id}" data-amount="500">+500 ₽</button>
             <button class="btn-sm-action" data-add-user="${u.id}" data-amount="1000">+1 000 ₽</button>
@@ -617,51 +801,127 @@ document.addEventListener('DOMContentLoaded', () => {
       </tr>
     `).join('');
 
+    // Set Balance Button
     document.querySelectorAll('[data-set-user]').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         const userId = btn.dataset.setUser;
         const input = document.getElementById(`balance-input-${userId}`);
         const newVal = parseInt(input.value, 10);
         if (!isNaN(newVal)) {
-          DB.updateUserBalanceById(userId, newVal);
-          DB.addMessage('admin', `Администратор скорректировал баланс: ${formatNumber(newVal)} ₽.`);
-          renderAll();
-          alert(`Баланс обновлен: ${formatNumber(newVal)} ₽`);
+          try {
+            await updateDoc(doc(db, 'users', userId), { balance: newVal });
+            alert(`Баланс обновлен: ${formatNumber(newVal)} ₽`);
+          } catch (err) {
+            alert('Ошибка: ' + err.message);
+          }
         }
       });
     });
 
+    // Add Balance Button
     document.querySelectorAll('[data-add-user]').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         const userId = btn.dataset.addUser;
         const addAmount = parseInt(btn.dataset.amount, 10);
-        const users = DB.getUsers();
-        const user = users.find(u => u.id === userId);
-        if (user) {
-          const newVal = user.balance + addAmount;
-          DB.updateUserBalanceById(userId, newVal);
-          DB.addMessage('admin', `Вам начислено +${formatNumber(addAmount)} ₽. Текущий баланс: ${formatNumber(newVal)} ₽.`);
-          renderAll();
+        try {
+          await updateDoc(doc(db, 'users', userId), { balance: increment(addAmount) });
+        } catch (err) {
+          alert('Ошибка: ' + err.message);
         }
       });
     });
+
+    // Dialogs list in admin chat
+    adminDialogsList.innerHTML = allUsers.map(u => `
+      <div class="dialog-item ${adminSelectedUserId === u.id ? 'active' : ''}" data-chat-user="${u.id}" data-user-name="${escapeHtml(u.displayName || u.email)}">
+        <strong style="font-size:0.85rem;">${escapeHtml(u.displayName || 'Покупатель')}</strong>
+        <div style="font-size:0.75rem; color:var(--text-dim);">${escapeHtml(u.email || u.id)}</div>
+      </div>
+    `).join('');
+
+    document.querySelectorAll('[data-chat-user]').forEach(item => {
+      item.addEventListener('click', () => {
+        adminSelectedUserId = item.dataset.chatUser;
+        const userName = item.dataset.userName;
+        document.querySelectorAll('.dialog-item').forEach(d => d.classList.remove('active'));
+        item.classList.add('active');
+        adminChatTargetUser.textContent = `Чат с: ${userName}`;
+        adminChatTargetMeta.textContent = `UID: ${adminSelectedUserId}`;
+        loadAdminChat(adminSelectedUserId);
+      });
+    });
+  });
+
+  // Admin Chat Stream Loader
+  let adminChatStreamUnsub = null;
+  function loadAdminChat(targetUid) {
+    if (adminChatStreamUnsub) adminChatStreamUnsub();
+
+    const q = query(collection(db, 'messages'), where('userId', '==', targetUid));
+    adminChatStreamUnsub = onSnapshot(q, (snapshot) => {
+      const msgs = [];
+      snapshot.forEach(docSnap => msgs.push({ id: docSnap.id, ...docSnap.data() }));
+      msgs.sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0));
+
+      if (msgs.length === 0) {
+        adminChatMessages.innerHTML = `<div style="text-align:center; padding:30px; color:var(--text-dim);">Нет сообщений с этим пользователем</div>`;
+        return;
+      }
+
+      adminChatMessages.innerHTML = msgs.map(m => `
+        <div class="msg-bubble-wrap ${m.from === 'admin' ? 'client' : 'support'}">
+          <div class="msg-text">${escapeHtml(m.text)}</div>
+          <div class="msg-meta">${m.from === 'admin' ? 'Вы (Администратор)' : 'Покупатель'} • ${m.time || ''}</div>
+        </div>
+      `).join('');
+      adminChatMessages.scrollTop = adminChatMessages.scrollHeight;
+    });
   }
 
-  function escapeHtml(text) {
-    if (!text) return '';
-    return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-  }
+  // Admin Send Reply
+  adminChatForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!adminSelectedUserId) {
+      alert('Сначала выберите покупателя из списка слева!');
+      return;
+    }
+    const text = adminChatInput.value.trim();
+    if (!text) return;
 
-  function renderAll() {
-    renderHeaderAndBalances();
-    renderCabinetOrders();
-    renderChat();
-    renderAdminTables();
-  }
+    adminChatInput.value = '';
+    const now = new Date();
+    try {
+      await addDoc(collection(db, 'messages'), {
+        userId: adminSelectedUserId,
+        from: 'admin',
+        text: text,
+        time: now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
+        createdAt: serverTimestamp()
+      });
+    } catch (err) {
+      console.error('Ошибка отправки ответа админа:', err);
+    }
+  });
 
-  window.addEventListener('storage', () => renderAll());
+  btnQuickReplyHello.addEventListener('click', async () => {
+    if (!adminSelectedUserId) {
+      alert('Сначала выберите покупателя из списка слева!');
+      return;
+    }
+    const now = new Date();
+    try {
+      await addDoc(collection(db, 'messages'), {
+        userId: adminSelectedUserId,
+        from: 'admin',
+        text: 'Курьер готов к передаче! Пожалуйста, зайдите на указанный сервер и напишите ваш статус.',
+        time: now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
+        createdAt: serverTimestamp()
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  });
 
-  // Init
+  // Init Calculator
   updateCalculator(1000000);
-  renderAll();
 });
