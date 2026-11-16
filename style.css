@@ -334,6 +334,7 @@ body {
 
 .hero-headline span {
   background: linear-gradient(135deg, #ffffff 30%, var(--gold-accent) 100%);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }

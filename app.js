@@ -4,7 +4,7 @@
  *
  * Features:
  *   1. Exclusive Account Balance purchases (Google Auth required)
- *   2. Delivery fields: "Игровой сервер", "ID игрового сервера", "Контакт"
+ *   2. Delivery fields: "Steam ID", "Контакт"
  *   3. Role-based Admin Panel:
  *      - Hidden by default
  *      - Master key unlock ('robrun2026') for the site owner
@@ -160,7 +160,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const successTotalCash = document.getElementById('success-total-cash');
   const successPrice = document.getElementById('success-price');
   const successRemainingBalance = document.getElementById('success-remaining-balance');
-  const successServerInfo = document.getElementById('success-server-info');
+  const successSteamInfo = document.getElementById('success-steam-info');
+  const profileDropdown = document.getElementById('profile-dropdown-menu');
+  const dropdownUserName = document.getElementById('dropdown-user-name');
+  const dropdownUserEmail = document.getElementById('dropdown-user-email');
   const successContactInfo = document.getElementById('success-contact-info');
   const btnSuccessAction = document.getElementById('btn-success-action');
 
@@ -210,6 +213,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       cabinetUsername.textContent = user.displayName || user.email.split('@')[0];
       cabinetUserEmail.textContent = user.email;
+      dropdownUserName.textContent = user.displayName || user.email.split('@')[0];
+      dropdownUserEmail.textContent = user.email;
 
       await syncUserDocument(user);
       subscribeToUserData(user.uid);
@@ -220,6 +225,7 @@ document.addEventListener('DOMContentLoaded', () => {
       btnLoginGoogle.style.display = 'flex';
       userLoggedBox.style.display = 'none';
       navAdminBtn.style.display = 'none';
+      closeProfileMenu();
 
       currentUserData = { balance: 0, isAdmin: false };
       updateBalancesUI(0);
@@ -304,12 +310,43 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Logout Handler
-  userAvatarBtn.addEventListener('click', async () => {
-    if (confirm('Вы действительно хотите выйти из аккаунта?')) {
-      await signOut(auth);
-      switchView('shop-view');
-    }
+  // Profile Dropdown Menu (top-right popup)
+  function closeProfileMenu() {
+    profileDropdown.classList.remove('show');
+    userAvatarBtn.classList.remove('active');
+  }
+
+  userAvatarBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isOpen = profileDropdown.classList.toggle('show');
+    userAvatarBtn.classList.toggle('active', isOpen);
+  });
+
+  profileDropdown.addEventListener('click', (e) => e.stopPropagation());
+  document.addEventListener('click', closeProfileMenu);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeProfileMenu();
+  });
+
+  document.getElementById('menu-item-shop').addEventListener('click', () => {
+    closeProfileMenu();
+    switchView('shop-view');
+  });
+
+  document.getElementById('menu-item-cabinet').addEventListener('click', () => {
+    closeProfileMenu();
+    switchView('cabinet-view');
+  });
+
+  document.getElementById('menu-item-topup').addEventListener('click', () => {
+    closeProfileMenu();
+    openTopupModal(700);
+  });
+
+  document.getElementById('menu-item-logout').addEventListener('click', async () => {
+    closeProfileMenu();
+    await signOut(auth);
+    switchView('shop-view');
   });
 
   // ==========================================
@@ -423,12 +460,11 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    const server = document.getElementById('game-server').value.trim();
-    const serverId = document.getElementById('game-server-id').value.trim();
+    const steamId = document.getElementById('steam-id').value.trim();
     const contact = document.getElementById('player-contact').value.trim();
 
-    if (!server || !serverId || !contact) {
-      alert('Пожалуйста, заполните все поля доставки (Сервер, ID сервера, Контакт).');
+    if (!steamId || !contact) {
+      alert('Пожалуйста, заполните все поля доставки (Steam ID, Контакт).');
       return;
     }
 
@@ -477,8 +513,7 @@ document.addEventListener('DOMContentLoaded', () => {
         userId: currentUser.uid,
         userEmail: currentUser.email,
         userName: currentUser.displayName || 'Покупатель',
-        gameServer: server,
-        gameServerId: serverId,
+        steamId: steamId,
         contact: contact,
         paymentMethod: 'С баланса аккаунта',
         cashAmount: amount,
@@ -498,7 +533,7 @@ document.addEventListener('DOMContentLoaded', () => {
         userId: currentUser.uid,
         userName: currentUser.displayName || currentUser.email,
         from: 'admin',
-        text: `📦 Заказ ${orderCode} успешно зарегистрирован на сумму ${formatNumber(totalCurrency)} $ (${formatNumber(price)} ₽ списано с баланса). Сервер: ${server} (ID: ${serverId}). Оператор свяжется по ${contact}.`,
+        text: `📦 Заказ ${orderCode} успешно зарегистрирован на сумму ${formatNumber(totalCurrency)} $ (${formatNumber(price)} ₽ списано с баланса). Steam ID: ${steamId}. Оператор свяжется по ${contact}.`,
         time: now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
         createdAt: serverTimestamp()
       });
@@ -509,7 +544,7 @@ document.addEventListener('DOMContentLoaded', () => {
       successTotalCash.textContent = `${formatNumber(totalCurrency)} $`;
       successPrice.textContent = `${formatNumber(price)} ₽`;
       successRemainingBalance.textContent = `${formatNumber(currentBalance - price)} ₽`;
-      successServerInfo.textContent = `${server} (ID: ${serverId})`;
+      successSteamInfo.textContent = steamId;
       successContactInfo.textContent = contact;
 
       btnSuccessAction.textContent = 'Перейти в кабинет к диалогу';
@@ -631,8 +666,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="order-stats-grid">
               <div><span>Валюта:</span> <strong>${formatNumber(o.totalCash)} $</strong> (+${o.bonusPct}%)</div>
               <div><span>Оплачено:</span> <strong>${formatNumber(o.price)} ₽</strong></div>
-              <div><span>Сервер:</span> <strong>${escapeHtml(o.gameServer || '-')}</strong></div>
-              <div><span>ID Сервера:</span> <strong>${escapeHtml(o.gameServerId || '-')}</strong></div>
+              <div style="grid-column: span 2;"><span>Steam ID:</span> <strong>${escapeHtml(o.steamId || '-')}</strong></div>
             </div>
           </div>
         `;
@@ -755,8 +789,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <small style="color:var(--text-dim);">${escapeHtml(o.contact || o.userEmail || '')}</small>
         </td>
         <td>
-          <strong>${escapeHtml(o.gameServer || '')}</strong><br>
-          <small style="color:var(--gold-accent);">ID: ${escapeHtml(o.gameServerId || '-')}</small>
+          <strong>${escapeHtml(o.steamId || '-')}</strong>
         </td>
         <td>
           <strong>${formatNumber(o.totalCash)} $</strong><br>
@@ -950,7 +983,7 @@ document.addEventListener('DOMContentLoaded', () => {
     await addDoc(collection(db, 'messages'), {
       userId: adminSelectedUserId,
       from: 'admin',
-      text: 'Курьер готов к передаче! Пожалуйста, зайдите на указанный сервер и напишите ваш статус.',
+      text: 'Курьер готов к передаче! Пожалуйста, зайдите в игру и напишите ваш статус.',
       time: now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
       createdAt: serverTimestamp()
     });

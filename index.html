@@ -59,9 +59,39 @@
           </div>
           <button class="btn-primary-sm" id="btn-open-topup">+ Пополнить</button>
           
-          <div class="user-avatar-menu" id="user-avatar-btn" title="Профиль и выход">
-            <img src="" alt="Avatar" id="user-avatar-img" class="user-avatar-img" style="display:none;">
-            <span id="user-avatar-placeholder">👤</span>
+          <!-- User Profile Dropdown Container -->
+          <div class="user-profile-dropdown-wrap" id="user-profile-wrap">
+            <div class="user-avatar-menu" id="user-avatar-btn" title="Меню профиля">
+              <img src="" alt="Avatar" id="user-avatar-img" class="user-avatar-img" style="display:none;">
+              <span id="user-avatar-placeholder">👤</span>
+              <span class="dropdown-caret">▾</span>
+            </div>
+
+            <!-- Profile Dropdown Menu -->
+            <div class="profile-dropdown-menu" id="profile-dropdown-menu">
+              <div class="dropdown-user-info">
+                <div class="dropdown-user-name" id="dropdown-user-name">Покупатель</div>
+                <div class="dropdown-user-email" id="dropdown-user-email">user@gmail.com</div>
+              </div>
+              <div class="dropdown-divider"></div>
+              <button class="dropdown-item" id="menu-item-shop">
+                <span class="item-icon">🏠</span>
+                <span>Магазин</span>
+              </button>
+              <button class="dropdown-item" id="menu-item-topup">
+                <span class="item-icon">💳</span>
+                <span>Пополнить баланс</span>
+              </button>
+              <button class="dropdown-item" id="menu-item-cabinet">
+                <span class="item-icon">👤</span>
+                <span>Личный кабинет</span>
+              </button>
+              <div class="dropdown-divider"></div>
+              <button class="dropdown-item text-danger" id="menu-item-logout">
+                <span class="item-icon">🚪</span>
+                <span>Выйти</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -104,8 +134,8 @@
             <span class="metric-label">Максимальный бонус к объему</span>
           </div>
           <div class="metric-card">
-            <span class="metric-number">3–7 мин</span>
-            <span class="metric-label">Среднее время передачи</span>
+            <span class="metric-number">до 60 минут</span>
+            <span class="metric-label">Среднее время передачи за 1 000 000 $</span>
           </div>
           <div class="metric-card">
             <span class="metric-number safe">100%</span>
@@ -213,16 +243,9 @@
 
               <div class="form-double-row">
                 <div class="form-col">
-                  <label for="game-server">Игровой сервер *</label>
-                  <input type="text" id="game-server" placeholder="Например: Europe (EU - Central #1)" required>
+                  <label for="steam-id">Steam ID *</label>
+                  <input type="text" id="steam-id" placeholder="Например: 76561198... или ссылка на профиль" required>
                 </div>
-                <div class="form-col">
-                  <label for="game-server-id">ID игрового сервера *</label>
-                  <input type="text" id="game-server-id" placeholder="Например: EU-9042 или IP сервера" required>
-                </div>
-              </div>
-
-              <div class="form-single-row">
                 <div class="form-col">
                   <label for="player-contact">Контакт для связи (Telegram / Discord) *</label>
                   <input type="text" id="player-contact" placeholder="@username" required>
@@ -273,7 +296,7 @@
               </button>
 
               <div class="receipt-footnote">
-                Операторы онлайн. Передача осуществляется в течение 3–7 минут после подтверждения.
+                Операторы онлайн. Среднее время передачи — до 60 минут за миллион после подтверждения.
               </div>
             </div>
           </div>
@@ -300,7 +323,7 @@
           <div class="benefit-card">
             <div class="benefit-index">02</div>
             <h3>Безопасная доставка</h3>
-            <p>Курьер заходит прямо на ваш игровой сервер по его ID и передает наличные.</p>
+            <p>Курьер находит вас в игре по Steam ID и передает наличные.</p>
           </div>
           <div class="benefit-card">
             <div class="benefit-index">03</div>
@@ -440,7 +463,7 @@
                   <th>ID</th>
                   <th>Время заказа</th>
                   <th>Клиент</th>
-                  <th>Сервер / ID Сервера</th>
+                  <th>Steam ID</th>
                   <th>Валюта + Бонус</th>
                   <th>Сумма (₽)</th>
                   <th>Статус заказа</th>
@@ -662,8 +685,8 @@
           <span id="success-remaining-balance">0 ₽</span>
         </div>
         <div class="modal-row">
-          <span>Игровой сервер:</span>
-          <span id="success-server-info">EU-Central (ID: EU-9042)</span>
+          <span>Steam ID:</span>
+          <span id="success-steam-info">76561198...</span>
         </div>
         <div class="modal-row">
           <span>Контакт клиента:</span>
