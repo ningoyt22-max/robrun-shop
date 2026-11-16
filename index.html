@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ROBRUN CASH — Премиальный сервис валюты в ROB RUN (Kefir)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Subtle Ambient Radial Glow (Luxury Spotlight) -->
+  <div class="radial-spotlight"></div>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="container header-inner">
+      
+      <!-- Brand Logo -->
+      <div class="brand" id="nav-brand">
+        <div class="brand-badge">KEFIR</div>
+        <div class="brand-title">ROBRUN<span>CASH</span></div>
+      </div>
+
+      <!-- Navigation Views Tabs -->
+      <nav class="nav">
+        <button class="nav-btn active" data-view="shop-view">Магазин</button>
+        <button class="nav-btn" data-view="cabinet-view">
+          Личный кабинет
+          <span class="nav-unread-dot" id="nav-unread-badge" style="display:none;"></span>
+        </button>
+        <button class="nav-btn admin-btn" data-view="admin-view">Админ-панель</button>
+      </nav>
+
+      <!-- User Balance & Actions -->
+      <div class="header-actions">
+        <div class="balance-pill" id="user-balance-display">
+          <span class="balance-caption">Баланс</span>
+          <strong class="balance-num" id="header-balance-val">0 ₽</strong>
+        </div>
+        <button class="btn-primary-sm" id="btn-open-topup">+ Пополнить</button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- =========================================================================
+       VIEW 1: LUXURY MINIMALIST SHOP
+       ========================================================================= -->
+  <main class="view-panel active" id="shop-view">
+    
+    <!-- Hero Section -->
+    <section class="hero-section">
+      <div class="container hero-container">
+        
+        <div class="hero-label-chip">
+          <span class="chip-dot"></span>
+          <span>ROB RUN STEAM • ОФИЦИАЛЬНЫЙ КУРС</span>
+        </div>
+
+        <h1 class="hero-headline">
+          Игровая валюта <br>
+          <span>нового уровня</span>
+        </h1>
+
+        <p class="hero-description">
+          Закрытый премиальный сервис доставки игровой валюты в ROB RUN от студии Kefir. Все покупки осуществляются через баланс сайта с гарантией защиты аккаунта.
+        </p>
+
+        <!-- Minimalist Metric Grid -->
+        <div class="hero-metrics-grid">
+          <div class="metric-card">
+            <span class="metric-number">70 ₽</span>
+            <span class="metric-label">Базовый курс за 100 000 $</span>
+          </div>
+          <div class="metric-card">
+            <span class="metric-number highlight">+25%</span>
+            <span class="metric-label">Максимальный бонус к объему</span>
+          </div>
+          <div class="metric-card">
+            <span class="metric-number">3–7 мин</span>
+            <span class="metric-label">Среднее время передачи</span>
+          </div>
+          <div class="metric-card">
+            <span class="metric-number safe">100%</span>
+            <span class="metric-label">Защита Easy Anti-Cheat</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Calculator Section -->
+    <section class="calculator-section" id="calculator">
+      <div class="container">
+        
+        <div class="section-title-wrap">
+          <span class="section-kicker">КАЛЬКУЛЯТОР ЗАКАЗА</span>
+          <h2>Выберите необходимый объем</h2>
+          <p>Оплата заказа списывается автоматически с баланса вашего личного кабинета</p>
+        </div>
+
+        <!-- Minimalist Preset Cards -->
+        <div class="presets-row">
+          
+          <div class="preset-card" data-amount="500000">
+            <div class="preset-tier">Старт</div>
+            <div class="preset-cash">500 000 $</div>
+            <div class="preset-bonus-sub text-dim">Без бонуса</div>
+            <div class="preset-rub">350 ₽</div>
+          </div>
+
+          <div class="preset-card active" data-amount="1000000">
+            <div class="preset-badge-rec">Популярный выбор</div>
+            <div class="preset-tier">Пакет 1M</div>
+            <div class="preset-cash">1 000 000 $</div>
+            <div class="preset-bonus-sub text-gold">+15% (150 000 $ бонусом)</div>
+            <div class="preset-rub">700 ₽</div>
+          </div>
+
+          <div class="preset-card" data-amount="5000000">
+            <div class="preset-tier">Синдикат</div>
+            <div class="preset-cash">5 000 000 $</div>
+            <div class="preset-bonus-sub text-gold">+20% (1 000 000 $ бонусом)</div>
+            <div class="preset-rub">3 500 ₽</div>
+          </div>
+
+          <div class="preset-card" data-amount="10000000">
+            <div class="preset-tier">Максимум</div>
+            <div class="preset-cash">10 000 000 $</div>
+            <div class="preset-bonus-sub text-gold">+25% (2 500 000 $ бонусом)</div>
+            <div class="preset-rub">7 000 ₽</div>
+          </div>
+
+        </div>
+
+        <!-- Calculator Workarea (Clean 2-Column Deck) -->
+        <div class="calc-grid">
+          
+          <!-- Left: Input & Form -->
+          <div class="calc-inputs-pane">
+            
+            <div class="calc-field-group">
+              <div class="field-label-row">
+                <label for="currency-input">Количество игровой валюты:</label>
+                <span class="rate-tag">100 000 $ = 70 ₽</span>
+              </div>
+
+              <div class="input-number-wrap">
+                <input type="text" id="currency-input" value="1 000 000" inputmode="numeric">
+                <span class="input-curr-symbol">$</span>
+              </div>
+
+              <!-- Sleek Slider -->
+              <div class="slider-box">
+                <input type="range" id="currency-slider" min="100000" max="15000000" step="50000" value="1000000">
+                <div class="slider-marks">
+                  <span>100K</span>
+                  <span>1M <small>(+15%)</small></span>
+                  <span>5M <small>(+20%)</small></span>
+                  <span>10M+ <small>(+25%)</small></span>
+                  <span>15M</span>
+                </div>
+              </div>
+
+              <!-- Refined Bonus Progress Bar -->
+              <div class="bonus-tier-bar">
+                <div class="bonus-tier-header">
+                  <span id="bonus-tier-text">Текущий бонус: <strong>+15%</strong></span>
+                  <span id="bonus-next-text" class="next-step-hint">До +20% не хватает: 4 000 000 $</span>
+                </div>
+                <div class="bonus-track">
+                  <div class="bonus-fill" id="bonus-progress-fill" style="width: 25%;"></div>
+                </div>
+                <div class="bonus-milestones">
+                  <span class="milestone-text active">0%</span>
+                  <span class="milestone-text active">+15% (от 1M)</span>
+                  <span class="milestone-text">+20% (от 5M)</span>
+                  <span class="milestone-text">+25% (от 10M)</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- In-Game Delivery Order Details Form -->
+            <form id="order-form" class="delivery-form">
+              <div class="form-section-title">Данные для доставки в игре</div>
+
+              <div class="form-double-row">
+                <div class="form-col">
+                  <label for="player-nick">Игровой никнейм / Steam URL *</label>
+                  <input type="text" id="player-nick" placeholder="Например: Robber_77" required>
+                </div>
+                <div class="form-col">
+                  <label for="player-server">Сервер игры *</label>
+                  <select id="player-server" required>
+                    <option value="EU - Central">Europe (EU - Central)</option>
+                    <option value="EU - East">Europe (EU - East / RU)</option>
+                    <option value="NA - East">North America (NA - East)</option>
+                    <option value="NA - West">North America (NA - West)</option>
+                    <option value="ASIA">Asia / Pacific</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-double-row">
+                <div class="form-col">
+                  <label for="player-contact">Контакт для связи (Telegram / Discord) *</label>
+                  <input type="text" id="player-contact" placeholder="@username" required>
+                </div>
+                <div class="form-col">
+                  <label for="delivery-type">Способ передачи</label>
+                  <select id="delivery-type">
+                    <option value="Схрон (Dead Drop)">Скрытый тайник (Dead Drop) — Рекомендуется</option>
+                    <option value="Прямой трейд">Прямой обмен на нейтральной базе</option>
+                    <option value="Выкуп предмета">Выкуп предмета на Черном Рынке</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="balance-rule-note">
+                <span class="rule-icon">💳</span>
+                <span>Оплата списывается с баланса вашего аккаунта. Если средств на балансе недостаточно, система предложит пополнение перед подтверждением.</span>
+              </div>
+            </form>
+
+          </div>
+
+          <!-- Right: Sleek Order Receipt -->
+          <div class="calc-receipt-pane">
+            <div class="receipt-card">
+              <div class="receipt-title">Сводка покупки</div>
+
+              <div class="receipt-line">
+                <span class="line-label">Игровой объем:</span>
+                <span class="line-val" id="summary-base-amount">1 000 000 $</span>
+              </div>
+
+              <div class="receipt-line text-gold">
+                <span class="line-label">Бонусная валюта (<span id="summary-bonus-pct">15%</span>):</span>
+                <span class="line-val" id="summary-bonus-amount">+150 000 $</span>
+              </div>
+
+              <div class="receipt-sep"></div>
+
+              <div class="receipt-line total-line">
+                <span class="line-label">Итого к начислению:</span>
+                <strong class="line-total-cash" id="summary-total-received">1 150 000 $</strong>
+              </div>
+
+              <div class="price-display-box">
+                <div class="price-caption">К списанию с баланса:</div>
+                <div class="price-sum" id="summary-total-price">700 ₽</div>
+                <div class="price-sub-balance">
+                  Ваш текущий баланс: <strong id="summary-user-balance">0 ₽</strong>
+                </div>
+              </div>
+
+              <button type="submit" form="order-form" class="btn-primary-action" id="submit-order-btn">
+                Оплатить с баланса — 700 ₽
+              </button>
+
+              <div class="receipt-footnote">
+                Операторы онлайн. Передача осуществляется в течение нескольких минут после подтверждения.
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Why Us Section (Clean Refined Cards) -->
+    <section class="benefits-section">
+      <div class="container">
+        <div class="section-title-wrap">
+          <span class="section-kicker">СТАНДАРТЫ КАЧЕСТВА</span>
+          <h2>Надежность и безопасность каждого заказа</h2>
+        </div>
+
+        <div class="benefits-grid">
+          <div class="benefit-card">
+            <div class="benefit-index">01</div>
+            <h3>Легальный фарм без банов</h3>
+            <p>Валюта добывается рейдовыми группами без использования инжекторов или стороннего ПО. Ваши учетные данные Steam защищены.</p>
+          </div>
+          <div class="benefit-card">
+            <div class="benefit-index">02</div>
+            <h3>Безопасная доставка</h3>
+            <p>Передача через замаскированные схроны (Dead Drop) исключает подозрения со стороны игровых систем мониторинга.</p>
+          </div>
+          <div class="benefit-card">
+            <div class="benefit-index">03</div>
+            <h3>Автоматический расчет</h3>
+            <p>Бонусные начисления прозрачны: чем больше партия, тем выгоднее стоимость за каждые 100 000 $.</p>
+          </div>
+          <div class="benefit-card">
+            <div class="benefit-index">04</div>
+            <h3>Поддержка и сопровождение</h3>
+            <p>Операторы на связи в личном кабинете. Каждый шаг заказа фиксируется во времени и сохраняется в истории.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- =========================================================================
+       VIEW 2: USER CABINET (Баланс, Заказы со временем, Чат с администратором)
+       ========================================================================= -->
+  <section class="view-panel" id="cabinet-view">
+    <div class="container cabinet-layout">
+
+      <!-- Executive Overview Deck -->
+      <div class="cabinet-top-card">
+        <div class="user-profile-meta">
+          <div class="profile-avatar">👤</div>
+          <div>
+            <h2 class="profile-title" id="cabinet-username">Покупатель #1</h2>
+            <div class="profile-tag">Авторизованный клиент • ROB RUN Store</div>
+          </div>
+        </div>
+
+        <div class="cabinet-balance-widget">
+          <div class="widget-row">
+            <span class="widget-label">Баланс на сайте:</span>
+            <button class="btn-text-action" id="cabinet-topup-btn">+ Пополнить</button>
+          </div>
+          <div class="widget-sum" id="cabinet-balance-val">0 ₽</div>
+          <div class="widget-note">Доступно для моментального списания при покупках</div>
+        </div>
+      </div>
+
+      <!-- Split Layout: Orders on Left, Support Chat on Right -->
+      <div class="cabinet-two-cols">
+        
+        <!-- Left: Orders History -->
+        <div class="pane-card">
+          <div class="pane-header">
+            <h3>История заказов</h3>
+            <span class="count-pill" id="cabinet-orders-count">0 заказов</span>
+          </div>
+
+          <div class="orders-feed" id="cabinet-orders-list">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <!-- Right: Live Chat with Admin -->
+        <div class="pane-card chat-pane">
+          <div class="pane-header">
+            <div class="chat-title-group">
+              <span class="status-indicator-dot"></span>
+              <div>
+                <h4>Поддержка и Администрация</h4>
+                <div class="chat-sub">Прямой диалог с оператором</div>
+              </div>
+            </div>
+            <span class="tag-label">HELP 24/7</span>
+          </div>
+
+          <!-- Messages Stream -->
+          <div class="chat-stream" id="customer-chat-messages">
+            <!-- Dynamically populated -->
+          </div>
+
+          <!-- Chat Input -->
+          <form class="chat-form" id="customer-chat-form">
+            <input type="text" id="customer-chat-input" placeholder="Напишите сообщение администратору..." autocomplete="off" required>
+            <button type="submit" class="btn-send">Отправить</button>
+          </form>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- =========================================================================
+       VIEW 3: ADMIN PANEL (Управление балансом, Заказы со временем, Чат с клиентом)
+       ========================================================================= -->
+  <section class="view-panel" id="admin-view">
+    <div class="container admin-layout">
+
+      <div class="admin-header-card">
+        <div>
+          <h2>Панель Администратора ROBRUN CASH</h2>
+          <p>Централизованное управление балансами, заказами клиентов и поддержкой</p>
+        </div>
+        <div class="admin-summary-pills">
+          <div class="stat-badge">
+            <span class="stat-caption">Заказов всего:</span>
+            <strong id="admin-stat-orders">0</strong>
+          </div>
+          <div class="stat-badge">
+            <span class="stat-caption">Оборот:</span>
+            <strong class="text-gold" id="admin-stat-turnover">0 ₽</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Admin Tabs Navigation -->
+      <div class="admin-tab-bar">
+        <button class="admin-tab-link active" data-subtab="admin-orders-tab">
+          Заказы и статусы (<span id="subtab-orders-badge">0</span>)
+        </button>
+        <button class="admin-tab-link" data-subtab="admin-users-tab">
+          Пользователи и баланс
+        </button>
+        <button class="admin-tab-link" data-subtab="admin-chat-tab">
+          Управление диалогами
+        </button>
+      </div>
+
+      <!-- Admin Subtab 1: Orders Management -->
+      <div class="admin-subview active" id="admin-orders-tab">
+        <div class="table-card">
+          <div class="table-header-row">
+            <h3>Список всех заказов (с точным временем оформления)</h3>
+            <span class="note-subtle">Статус обновляется мгновенно</span>
+          </div>
+
+          <div class="table-wrap">
+            <table class="clean-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Время заказа</th>
+                  <th>Клиент / Ник в игре</th>
+                  <th>Сервер / Способ</th>
+                  <th>Валюта + Бонус</th>
+                  <th>Сумма (₽)</th>
+                  <th>Статус заказа</th>
+                </tr>
+              </thead>
+              <tbody id="admin-orders-tbody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Admin Subtab 2: Users & Balance Management -->
+      <div class="admin-subview" id="admin-users-tab">
+        <div class="table-card">
+          <div class="table-header-row">
+            <h3>Управление балансом пользователей</h3>
+            <span class="note-subtle">Корректировка баланса отображается у клиента без перезагрузки</span>
+          </div>
+
+          <div class="table-wrap">
+            <table class="clean-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Имя клиента</th>
+                  <th>Контакт</th>
+                  <th>Баланс на сайте</th>
+                  <th>Управление балансом</th>
+                </tr>
+              </thead>
+              <tbody id="admin-users-tbody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Admin Subtab 3: Admin Chat Console -->
+      <div class="admin-subview" id="admin-chat-tab">
+        <div class="admin-chat-deck">
+          
+          <div class="dialogs-sidebar">
+            <div class="dialogs-sidebar-title">Диалоги покупателей</div>
+            <div class="dialogs-list" id="admin-dialogs-list">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <div class="dialog-main-area">
+            <div class="dialog-head">
+              <div>
+                <h4 id="admin-chat-target-user">Чат с покупателем</h4>
+                <span class="meta-small" id="admin-chat-target-meta">ID: usr_1</span>
+              </div>
+              <button class="btn-subtle" id="btn-quick-reply-hello">Шаблон: «Курьер готов к передаче»</button>
+            </div>
+
+            <div class="chat-stream admin-chat-stream" id="admin-chat-messages">
+              <!-- Dynamically populated -->
+            </div>
+
+            <form class="chat-form" id="admin-chat-form">
+              <input type="text" id="admin-chat-input" placeholder="Ответить покупателю от лица Администратора..." autocomplete="off" required>
+              <button type="submit" class="btn-send">Ответить</button>
+            </form>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- =========================================================================
+       MODALS
+       ========================================================================= -->
+
+  <!-- Top-Up Modal -->
+  <div class="modal-backdrop" id="topup-modal">
+    <div class="modal-box">
+      <button class="modal-close-btn" id="topup-modal-close">&times;</button>
+      
+      <div class="modal-top">
+        <div class="modal-badge-icon">💳</div>
+        <h3>Пополнение баланса</h3>
+        <p>Выберите сумму для пополнения вашего личного счета</p>
+      </div>
+
+      <div class="topup-chips-row">
+        <button type="button" class="chip-btn" data-amount="350">350 ₽</button>
+        <button type="button" class="chip-btn active" data-amount="700">700 ₽ (1M $)</button>
+        <button type="button" class="chip-btn" data-amount="3500">3 500 ₽ (5M $)</button>
+        <button type="button" class="chip-btn" data-amount="7000">7 000 ₽ (10M $)</button>
+      </div>
+
+      <div class="modal-field">
+        <label for="topup-amount-input">Сумма в рублях:</label>
+        <div class="input-number-wrap modal-input">
+          <input type="number" id="topup-amount-input" value="700" min="50" step="50">
+          <span class="input-curr-symbol">₽</span>
+        </div>
+      </div>
+
+      <label class="modal-field-label">Способ оплаты:</label>
+      <div class="methods-grid">
+        <label class="method-box active">
+          <input type="radio" name="topup-method" value="СБП" checked>
+          <span class="method-name">⚡ СБП (0% ком.)</span>
+        </label>
+        <label class="method-box">
+          <input type="radio" name="topup-method" value="Банковская карта">
+          <span class="method-name">💳 Карты РФ / МИР</span>
+        </label>
+        <label class="method-box">
+          <input type="radio" name="topup-method" value="Т-Банк / Сбер">
+          <span class="method-name">🟡 Т-Банк / Сбер</span>
+        </label>
+        <label class="method-box">
+          <input type="radio" name="topup-method" value="Криптовалюта">
+          <span class="method-name">🪙 USDT / TON</span>
+        </label>
+      </div>
+
+      <button class="btn-primary-action" id="btn-submit-topup">
+        Пополнить баланс на <span id="topup-btn-sum">700</span> ₽
+      </button>
+
+      <div class="modal-disclaimer">В тестовом режиме средства зачисляются моментально.</div>
+    </div>
+  </div>
+
+  <!-- Insufficient Funds Modal -->
+  <div class="modal-backdrop" id="insufficient-modal">
+    <div class="modal-box">
+      <button class="modal-close-btn" id="insufficient-close">&times;</button>
+      
+      <div class="modal-top">
+        <div class="modal-badge-icon warning">⚠️</div>
+        <h3>Недостаточно средств</h3>
+        <p>Покупка осуществляется только через баланс сайта</p>
+      </div>
+
+      <div class="summary-table-modal">
+        <div class="modal-row">
+          <span>Сумма к оплате:</span>
+          <strong class="text-gold" id="insufficient-cost">700 ₽</strong>
+        </div>
+        <div class="modal-row">
+          <span>Текущий баланс:</span>
+          <strong id="insufficient-current">0 ₽</strong>
+        </div>
+        <div class="modal-row highlight-diff">
+          <span>Необходимо доплатить:</span>
+          <strong class="text-gold" id="insufficient-diff">700 ₽</strong>
+        </div>
+      </div>
+
+      <button class="btn-primary-action" id="btn-insufficient-topup">
+        Пополнить баланс
+      </button>
+    </div>
+  </div>
+
+  <!-- Order Success Modal -->
+  <div class="modal-backdrop" id="order-success-modal">
+    <div class="modal-box">
+      <button class="modal-close-btn" id="order-success-close">&times;</button>
+      
+      <div class="modal-top">
+        <div class="modal-badge-icon success">✓</div>
+        <h3>Заказ успешно оформлен</h3>
+        <p>Номер накладной: <strong id="success-order-id">#RR-1029</strong></p>
+      </div>
+
+      <div class="summary-table-modal">
+        <div class="modal-row">
+          <span>Время заказа:</span>
+          <strong id="success-time">16.11.2026, 16:30</strong>
+        </div>
+        <div class="modal-row">
+          <span>Валюта к начислению:</span>
+          <strong class="text-gold" id="success-total-cash">1 150 000 $</strong>
+        </div>
+        <div class="modal-row">
+          <span>Списано с баланса:</span>
+          <strong id="success-price">700 ₽</strong>
+        </div>
+        <div class="modal-row">
+          <span>Остаток на балансе:</span>
+          <span id="success-remaining-balance">0 ₽</span>
+        </div>
+        <div class="modal-row">
+          <span>Игровой ник / Сервер:</span>
+          <span id="success-nick-server">Robber_77 (EU - Central)</span>
+        </div>
+      </div>
+
+      <button class="btn-primary-action" id="btn-goto-cabinet-after-order">
+        Перейти в личный кабинет к диалогу
+      </button>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div class="brand">
+        <div class="brand-badge">KEFIR</div>
+        <div class="brand-title">ROBRUN<span>CASH</span></div>
+      </div>
+      <div class="footer-legal">
+        Независимый сервис доставки внутриигровой валюты. Все права на игру ROB RUN принадлежат студии Kefir Games.
+      </div>
+      <div class="footer-copy">© 2026 ROBRUN CASH. Все права защищены.</div>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
