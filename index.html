@@ -11,7 +11,7 @@
 </head>
 <body>
 
-  <!-- Subtle Ambient Radial Glow (Luxury Spotlight) -->
+  <!-- Subtle Ambient Radial Glow -->
   <div class="radial-spotlight"></div>
 
   <!-- Header -->
@@ -31,7 +31,10 @@
           Личный кабинет
           <span class="nav-unread-dot" id="nav-unread-badge" style="display:none;"></span>
         </button>
-        <button class="nav-btn admin-btn" data-view="admin-view">Админ-панель</button>
+        <!-- Admin Tab (Visible only to Admins) -->
+        <button class="nav-btn admin-btn" id="nav-admin-btn" data-view="admin-view" style="display:none;">
+          <span>⚙️ Админ-панель</span>
+        </button>
       </nav>
 
       <!-- User Auth, Balance & Actions -->
@@ -56,7 +59,7 @@
           </div>
           <button class="btn-primary-sm" id="btn-open-topup">+ Пополнить</button>
           
-          <div class="user-avatar-menu" id="user-avatar-btn" title="Выйти из аккаунта">
+          <div class="user-avatar-menu" id="user-avatar-btn" title="Профиль и выход">
             <img src="" alt="Avatar" id="user-avatar-img" class="user-avatar-img" style="display:none;">
             <span id="user-avatar-placeholder">👤</span>
           </div>
@@ -87,7 +90,7 @@
         </h1>
 
         <p class="hero-description">
-          Закрытый премиальный сервис доставки игровой валюты в ROB RUN от студии Kefir. Синхронизировано в реальном времени через облачную базу Firebase.
+          Закрытый премиальный сервис доставки игровой валюты в ROB RUN от студии Kefir. Покупка осуществляется через баланс личного кабинета.
         </p>
 
         <!-- Minimalist Metric Grid -->
@@ -206,43 +209,29 @@
 
             <!-- In-Game Delivery Order Details Form -->
             <form id="order-form" class="delivery-form">
-              <div class="form-section-title">Данные для доставки в игре</div>
+              <div class="form-section-title">Данные для доставки в ROB RUN</div>
 
               <div class="form-double-row">
                 <div class="form-col">
-                  <label for="player-nick">Игровой никнейм / Steam URL *</label>
-                  <input type="text" id="player-nick" placeholder="Например: Robber_77" required>
+                  <label for="game-server">Игровой сервер *</label>
+                  <input type="text" id="game-server" placeholder="Например: Europe (EU - Central #1)" required>
                 </div>
                 <div class="form-col">
-                  <label for="player-server">Сервер игры *</label>
-                  <select id="player-server" required>
-                    <option value="EU - Central">Europe (EU - Central)</option>
-                    <option value="EU - East">Europe (EU - East / RU)</option>
-                    <option value="NA - East">North America (NA - East)</option>
-                    <option value="NA - West">North America (NA - West)</option>
-                    <option value="ASIA">Asia / Pacific</option>
-                  </select>
+                  <label for="game-server-id">ID игрового сервера *</label>
+                  <input type="text" id="game-server-id" placeholder="Например: EU-9042 или IP сервера" required>
                 </div>
               </div>
 
-              <div class="form-double-row">
+              <div class="form-single-row">
                 <div class="form-col">
                   <label for="player-contact">Контакт для связи (Telegram / Discord) *</label>
                   <input type="text" id="player-contact" placeholder="@username" required>
-                </div>
-                <div class="form-col">
-                  <label for="delivery-type">Способ передачи</label>
-                  <select id="delivery-type">
-                    <option value="Схрон (Dead Drop)">Скрытый тайник (Dead Drop) — Рекомендуется</option>
-                    <option value="Прямой трейд">Прямой обмен на нейтральной базе</option>
-                    <option value="Выкуп предмета">Выкуп предмета на Черном Рынке</option>
-                  </select>
                 </div>
               </div>
 
               <div class="balance-rule-note">
                 <span class="rule-icon">💳</span>
-                <span>Оплата списывается с баланса вашего аккаунта. Если средств на балансе недостаточно, система предложит пополнение перед подтверждением.</span>
+                <span>Оплата списывается с баланса вашего личного кабинета. Для оформления необходимо войти в аккаунт.</span>
               </div>
             </form>
 
@@ -251,6 +240,7 @@
           <!-- Right: Sleek Order Receipt -->
           <div class="calc-receipt-pane">
             <div class="receipt-card">
+
               <div class="receipt-title">Сводка покупки</div>
 
               <div class="receipt-line">
@@ -283,7 +273,7 @@
               </button>
 
               <div class="receipt-footnote">
-                Операторы онлайн. Передача осуществляется в течение нескольких минут после подтверждения.
+                Операторы онлайн. Передача осуществляется в течение 3–7 минут после подтверждения.
               </div>
             </div>
           </div>
@@ -310,7 +300,7 @@
           <div class="benefit-card">
             <div class="benefit-index">02</div>
             <h3>Безопасная доставка</h3>
-            <p>Передача через замаскированные схроны (Dead Drop) исключает подозрения со стороны игровых систем мониторинга.</p>
+            <p>Курьер заходит прямо на ваш игровой сервер по его ID и передает наличные.</p>
           </div>
           <div class="benefit-card">
             <div class="benefit-index">03</div>
@@ -400,7 +390,7 @@
   </section>
 
   <!-- =========================================================================
-       VIEW 3: ADMIN PANEL (Firestore Realtime)
+       VIEW 3: ADMIN PANEL (Restricted Access)
        ========================================================================= -->
   <section class="view-panel" id="admin-view">
     <div class="container admin-layout">
@@ -408,7 +398,7 @@
       <div class="admin-header-card">
         <div>
           <h2>Панель Администратора ROBRUN CASH</h2>
-          <p>Централизованное управление балансами, заказами клиентов и поддержкой через Firebase</p>
+          <p>Централизованное управление балансами, правами администраторов, заказами и поддержкой</p>
         </div>
         <div class="admin-summary-pills">
           <div class="stat-badge">
@@ -428,7 +418,7 @@
           Заказы и статусы (<span id="subtab-orders-badge">0</span>)
         </button>
         <button class="admin-tab-link" data-subtab="admin-users-tab">
-          Пользователи и баланс
+          Пользователи, баланс и админки
         </button>
         <button class="admin-tab-link" data-subtab="admin-chat-tab">
           Управление диалогами
@@ -449,8 +439,8 @@
                 <tr>
                   <th>ID</th>
                   <th>Время заказа</th>
-                  <th>Клиент / Ник в игре</th>
-                  <th>Сервер / Способ</th>
+                  <th>Клиент</th>
+                  <th>Сервер / ID Сервера</th>
                   <th>Валюта + Бонус</th>
                   <th>Сумма (₽)</th>
                   <th>Статус заказа</th>
@@ -464,12 +454,12 @@
         </div>
       </div>
 
-      <!-- Admin Subtab 2: Users & Balance Management -->
+      <!-- Admin Subtab 2: Users & Admin Permissions Management -->
       <div class="admin-subview" id="admin-users-tab">
         <div class="table-card">
           <div class="table-header-row">
-            <h3>Управление балансом пользователей в Firebase</h3>
-            <span class="note-subtle">Изменение баланса мгновенно синхронизируется у покупателя</span>
+            <h3>Управление пользователями, балансом и правами администратора</h3>
+            <span class="note-subtle">Вы можете выдавать или отзывать права администратора любому профилю</span>
           </div>
 
           <div class="table-wrap">
@@ -478,8 +468,8 @@
                 <tr>
                   <th>User UID</th>
                   <th>Имя / Email</th>
-                  <th>Контакт</th>
                   <th>Баланс на сайте</th>
+                  <th>Роль (Админ)</th>
                   <th>Управление балансом</th>
                 </tr>
               </thead>
@@ -530,6 +520,32 @@
   <!-- =========================================================================
        MODALS
        ========================================================================= -->
+
+  <!-- Admin Passkey / Unlock Modal -->
+  <div class="modal-backdrop" id="admin-key-modal">
+    <div class="modal-box">
+      <button class="modal-close-btn" id="admin-key-close">&times;</button>
+      
+      <div class="modal-top">
+        <div class="modal-badge-icon">🔐</div>
+        <h3>Доступ к панели Администратора</h3>
+        <p>Панель защищена. Введите секретный ключ владельца, чтобы назначить себе права администратора.</p>
+      </div>
+
+      <div class="modal-field">
+        <label for="admin-secret-input">Мастер-ключ администратора:</label>
+        <div class="input-number-wrap modal-input">
+          <input type="password" id="admin-secret-input" placeholder="Введите ключ">
+        </div>
+      </div>
+
+      <button class="btn-primary-action" id="btn-submit-admin-key">
+        Подтвердить права
+      </button>
+
+      <div class="modal-disclaimer">Мастер-ключ владельца: <strong>robrun2026</strong>. После подтверждения ваш аккаунт навсегда станет администратором.</div>
+    </div>
+  </div>
 
   <!-- Top-Up Modal -->
   <div class="modal-backdrop" id="topup-modal">
@@ -624,7 +640,7 @@
       
       <div class="modal-top">
         <div class="modal-badge-icon success">✓</div>
-        <h3>Заказ успешно оформлен</h3>
+        <h3 id="success-modal-title">Заказ успешно оплачен</h3>
         <p>Номер накладной: <strong id="success-order-id">#RR-1029</strong></p>
       </div>
 
@@ -641,18 +657,22 @@
           <span>Списано с баланса:</span>
           <strong id="success-price">700 ₽</strong>
         </div>
-        <div class="modal-row">
+        <div class="modal-row" id="row-remaining-balance">
           <span>Остаток на балансе:</span>
           <span id="success-remaining-balance">0 ₽</span>
         </div>
         <div class="modal-row">
-          <span>Игровой ник / Сервер:</span>
-          <span id="success-nick-server">Robber_77 (EU - Central)</span>
+          <span>Игровой сервер:</span>
+          <span id="success-server-info">EU-Central (ID: EU-9042)</span>
+        </div>
+        <div class="modal-row">
+          <span>Контакт клиента:</span>
+          <span id="success-contact-info">@username</span>
         </div>
       </div>
 
-      <button class="btn-primary-action" id="btn-goto-cabinet-after-order">
-        Перейти в личный кабинет к диалогу
+      <button class="btn-primary-action" id="btn-success-action">
+        Перейти в кабинет к диалогу
       </button>
     </div>
   </div>
@@ -667,7 +687,10 @@
       <div class="footer-legal">
         Независимый сервис доставки внутриигровой валюты. Все права на игру ROB RUN принадлежат студии Kefir Games.
       </div>
-      <div class="footer-copy">© 2026 ROBRUN CASH • Powered by Firebase.</div>
+      <div class="footer-copy">
+        © 2026 ROBRUN CASH • Powered by Firebase.
+        <a href="javascript:void(0)" id="footer-admin-link" style="color:var(--text-dim); text-decoration:none; margin-left:10px;">Вход для админа</a>
+      </div>
     </div>
   </footer>
 
